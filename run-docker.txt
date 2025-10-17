@@ -1,0 +1,14 @@
+BASH
+
+docker run -d --name bot-planning \
+  --env-file .\.env \
+  --restart always \
+  bot-planning:latest
+
+
+POWERSHELL
+
+docker run -d --name bot-planning `
+  --env-file .\.env `
+  --restart always `
+  bot-planning:latest
