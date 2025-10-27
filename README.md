@@ -9,13 +9,17 @@ Pour le lancer pour vous :
     docker build -t bot-planning .
   - lancer le avec la commande bash ou powershell
     BASH
+    ```bash
     docker run -d --name bot-planning \
-      --env-file .\.env \
+      --env-file .\.env \\
       --restart always \
       bot-planning:latest
+    ```
 
     POWERSHELL
+    ```pws
     docker run -d --name bot-planning `
       --env-file .\.env `
       --restart always `
       bot-planning:latest
+    ```
