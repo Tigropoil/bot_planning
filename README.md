@@ -6,7 +6,9 @@ Pour le lancer pour vous :
   - faites un ".env" dans le dossier du projet et faites 2 variables : DISCORD_TOKEN pour le token du bot et EDT_PATH pour l'url du Google Sheets (avec /export?format=csv à la fin)
   - créer le docker avec la commande ci-dessous
     CREER L'IMAGE
+    ```cmd
     docker build -t bot-planning .
+    ```
   - lancer le avec la commande bash ou powershell
     BASH
     ```bash
