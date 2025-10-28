@@ -94,7 +94,8 @@ def get_current_week_image():
         "l": "Lundi", "m": "Mardi", "me": "Mercredi",
         "j": "Jeudi", "v": "Vendredi", "s": "Samedi", "d": "Dimanche"
     }
-    df_mois["Jour"] = df_mois["Jour"].map(jours_map).fillna(df_mois["Jour"])
+    df_mois["Jour"] = map_jour_with_order(df_mois["Jour"])
+    #df_mois["Jour"] = df_mois["Jour"].map(jours_map).fillna(df_mois["Jour"])
 
     # Ajouter les dates du mois
     annee = datetime.now().year
@@ -160,6 +161,38 @@ def get_current_week_image():
     plt.close(fig)
 
     return buf
+
+def map_jour_with_order(jours):
+    jours = [str(j).strip().lower() for j in jours]
+    result = []
+    previous = None
+
+    for jour in jours:
+        if jour == "l":
+            result.append("Lundi")
+        elif jour == "m":
+            # If previous was Lundi -> this is Mardi
+            # Otherwise -> Mercredi
+            if previous == "Lundi":
+                result.append("Mardi")
+            else:
+                result.append("Mercredi")
+        elif jour == "me":
+            result.append("Mercredi")
+        elif jour == "j":
+            result.append("Jeudi")
+        elif jour == "v":
+            result.append("Vendredi")
+        elif jour == "s":
+            result.append("Samedi")
+        elif jour == "d":
+            result.append("Dimanche")
+        else:
+            result.append(jour)  # unknown, leave as is
+        previous = result[-1]
+    return result
+
+
 
 # ===========================
 # COMMANDE DISCORD : /planning
