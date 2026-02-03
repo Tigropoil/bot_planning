@@ -7,6 +7,7 @@ from datetime import timedelta
 from dotenv import load_dotenv
 import io
 import os
+import hashlib
 
 load_dotenv()
 
@@ -27,9 +28,13 @@ matiere_map = {
     "UTC501": "Maths",
     "UTC502": "OS",
     "UTC503": "Programmation",
-    "UTC504": "SI et BD",
+    "UTC504 - IM": "SI et BD",
     "UTC505": "Réseaux",
-    "GDN100": "Gestion"
+    "GDN100": "Gestion",
+    "SEC102-FC": "Cybersécurité",
+    "SEC102-AD": "Cybersécurité",
+    "NFP121": "Programmation avancée",
+    "NFP107": "SQL",
 }
 
 # Fonction pour transformer le code en "CODE : Intitulé"
@@ -39,20 +44,49 @@ def remplacer_code_matiere(code):
         return f"{code} : {matiere_map[code]}"
     return code  # si code inconnu, garder tel quel
 
-matiere_colors = {
-    "UTC501": "#FFD700",  # Maths : jaune
-    "UTC502": "#87CEFA",  # OS : bleu clair
-    "UTC503": "#90EE90",  # Programmation : vert clair
-    "UTC504": "#FFB6C1",  # SI et BD : rose clair
-    "UTC505": "#FFA07A",  # Réseaux : saumon
-    "GDN100": "#D3D3D3"   # Gestion : gris clair
-}
+matiere_colors = {}
+
+
+def generer_couleur_automatique(code):
+    """Génère une couleur hexadécimale pastel unique basée sur le code de l'UE"""
+    code = str(code).strip()
+    # Créer un hash du code
+    hash_obj = hashlib.md5(code.encode())
+    hash_hex = hash_obj.hexdigest()
+
+    # Extraire les composantes RGB du hash
+    r = int(hash_hex[0:2], 16)
+    g = int(hash_hex[2:4], 16)
+    b = int(hash_hex[4:6], 16)
+
+    # Convertir en pastel : augmenter la luminosité en mélangeant avec du blanc
+    # Formule : couleur_pastel = couleur * 0.5 + blanc * 0.5
+    r = int(r * 0.5 + 255 * 0.5)
+    g = int(g * 0.5 + 255 * 0.5)
+    b = int(b * 0.5 + 255 * 0.5)
+
+    return f"#{r:02x}{g:02x}{b:02x}"
 
 def couleur_matiere(code):
     if code is None:
         return "#FFFFFF"  # blanc par défaut
-    code = str(code).split(" :")[0].strip()  # récupérer le code seul
-    return matiere_colors.get(code, "#FFFFFF")  # blanc si code inconnu
+    code_seul = str(code).split(" :")[0].strip()  # récupérer le code seul
+    # Essayer d'abord le dictionnaire, sinon générer automatiquement
+    return matiere_colors.get(code_seul, generer_couleur_automatique(code_seul))
+
+
+def couleur_texte(couleur_hex):
+    """Détermine si le texte doit être blanc ou noir selon la luminosité du fond"""
+    # Convertir hex en RGB
+    couleur_hex = couleur_hex.lstrip('#')
+    r, g, b = tuple(int(couleur_hex[i:i + 2], 16) for i in (0, 2, 4))
+
+    # Calculer la luminosité (formule standard)
+    luminosite = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+
+    # Si luminosité < 0.5, fond sombre -> texte blanc
+    return "#FFFFFF" if luminosite < 0.5 else "#000000"
+
 
 # ===========================
 # FONCTION : Récupération du planning
@@ -75,7 +109,7 @@ def get_current_week_image():
     header_row = df.iloc[0].astype(str)
     mois_col_index = None
     for i, val in enumerate(header_row):
-        if mois_cle in val:
+        if pd.notna(val) and mois_cle in str(val):
             mois_col_index = i
             break
     if mois_col_index is None:
@@ -90,18 +124,15 @@ def get_current_week_image():
     df_mois = df_mois[df_mois["Jour"].astype(str).str.strip() != ""]
 
     # Nettoyer les abréviations des jours
-    jours_map = {
-        "l": "Lundi", "m": "Mardi", "me": "Mercredi",
-        "j": "Jeudi", "v": "Vendredi", "s": "Samedi", "d": "Dimanche"
-    }
     df_mois["Jour"] = map_jour_with_order(df_mois["Jour"])
-    #df_mois["Jour"] = df_mois["Jour"].map(jours_map).fillna(df_mois["Jour"])
 
     # Ajouter les dates du mois
     annee = datetime.now().year
     mois_num = datetime.now().month
-    all_dates = pd.date_range(start=f"{annee}-{mois_num:02d}-01", end=f"{annee}-{mois_num:02d}-31")
-    df_mois["Date"] = all_dates[:len(df_mois)]
+
+    last_day = pd.Timestamp(year=annee, month=mois_num, day=1).days_in_month
+    all_dates = pd.date_range(start=f"{annee}-{mois_num:02d}-01", end=f"{annee}-{mois_num:02d}-{last_day}")
+    df_mois["Date"] = all_dates[:len(df_mois)].values
     df_mois["Semaine"] = df_mois["Date"].dt.isocalendar().week
 
     # Filtrer semaine actuelle
@@ -128,11 +159,17 @@ def get_current_week_image():
 
     # Couleurs par cellule
     cell_colors = []
+    text_colors = []
     for _, row in df_semaine.iterrows():
         cell_colors.append([
             "#FFFFFF",  # Jour
             couleur_matiere(row['Matin']),
             couleur_matiere(row['Après-midi'])
+        ])
+        text_colors.append([
+            "#000000",  # Jour
+            couleur_texte(couleur_matiere(row['Matin'])),
+            couleur_texte(couleur_matiere(row['Après-midi']))
         ])
 
     # Créer l'image
@@ -148,6 +185,10 @@ def get_current_week_image():
     colWidths=[0.2, 0.4, 0.4],  # <-- largeur relative des colonnes
     loc='center'
     )
+
+    for i, row in enumerate(text_colors):
+        for j, color in enumerate(row):
+            table[(i + 1, j)].set_text_props(color=color)
 
     table.auto_set_font_size(False)
     table.set_fontsize(10)
@@ -198,13 +239,30 @@ def map_jour_with_order(jours):
 # COMMANDE DISCORD : /planning
 # ===========================
 @bot.tree.command(name="planning", description="Afficher le planning de la semaine")
+#async def planning(interaction: discord.Interaction):
+#    await interaction.response.defer()  # ✅ Indique qu'on traite la requête
+#    try:
+#        image_buf = get_current_week_image()
+#        await interaction.followup.send(file=discord.File(fp=image_buf, filename="planning.png"))
+#    except Exception as e:
+#        await interaction.followup.send(f"❌ Erreur lors de la récupération du planning : {e}")
 async def planning(interaction: discord.Interaction):
     await interaction.response.defer()  # ✅ Indique qu'on traite la requête
     try:
         image_buf = get_current_week_image()
+        if image_buf is None:
+            await interaction.followup.send("ℹ️ Aucun cours cette semaine.")
+            return
         await interaction.followup.send(file=discord.File(fp=image_buf, filename="planning.png"))
     except Exception as e:
-        await interaction.followup.send(f"❌ Erreur lors de la récupération du planning : {e}")
+        import traceback
+        tb_list = traceback.extract_tb(e.__traceback__)
+        if tb_list:
+            last = tb_list[-1]
+            line_info = f"{os.path.basename(last.filename)}:{last.lineno}"
+        else:
+            line_info = "ligne inconnue"
+        await interaction.followup.send(f"❌ Erreur lors de la récupération du planning : {type(e).__name__}: {e}\n {line_info}")
 
 
 # ===========================
