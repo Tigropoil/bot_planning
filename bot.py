@@ -64,9 +64,9 @@ def get_current_week_image():
     # Mois actuel
     mois_actuel_en = datetime.now().strftime("%B").lower()
     mois_mapping = {
-        "january": "JANVIER", "february": "FEVRIER", "march": "MARS",
+        "january": "JANVIER", "february": "FÉVRIER", "march": "MARS",
         "april": "AVRIL", "may": "MAI", "june": "JUIN",
-        "july": "JUILLET", "august": "AOUT", "september": "SEPTEMBRE",
+        "july": "JUILLET", "august": "AOÛT", "september": "SEPTEMBRE",
         "october": "OCTOBRE", "november": "NOVEMBRE", "december": "DECEMBRE"
     }
     mois_cle = mois_mapping.get(mois_actuel_en)
