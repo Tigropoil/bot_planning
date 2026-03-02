@@ -13,7 +13,7 @@ Pour le lancer pour vous :
     BASH
     ```bash
     docker run -d --name bot-planning \
-      --env-file .\.env \\
+      --env-file .\.env \
       --restart always \
       bot-planning:latest
     ```
